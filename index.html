@@ -1,258 +1,64 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Precio de la Luz</title>
-
-<link rel="manifest" href="manifest.json">
-
-<style>
-body{
-font-family: Arial, sans-serif;
-background:#f2f4f8;
-margin:0;
-padding:20px;
-text-align:center;
-}
-
-h1{
-margin-top:10px;
-}
-
-.controls{
-margin:15px;
-}
-
-button{
-padding:10px 16px;
-font-size:16px;
-margin:5px;
-border:none;
-border-radius:8px;
-background:#2c7be5;
-color:white;
-cursor:pointer;
-}
-
-button:hover{
-opacity:0.9;
-}
-
-.card{
-background:white;
-border-radius:12px;
-padding:15px;
-margin:15px auto;
-max-width:700px;
-box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-}
-
-th,td{
-padding:8px;
-border-bottom:1px solid #ddd;
-}
-
-.barato{
-background:#d4f8d4;
-}
-
-.caro{
-background:#ffd6d6;
-}
-
-#stats{
-display:flex;
-justify-content:space-around;
-flex-wrap:wrap;
-}
-
-.stat{
-background:#fafafa;
-padding:10px;
-border-radius:10px;
-margin:5px;
-}
-
-canvas{
-max-width:700px;
-margin:auto;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Calendar</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        .calendar {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: auto;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ffffff;
+            color: #000;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
 </head>
-
 <body>
-
-<h1>⚡ Precio de la luz</h1>
-
-<div class="controls">
-<button onclick="cambiarDia(-1)">⬅ Ayer</button>
-<span id="fecha"></span>
-<button onclick="cambiarDia(1)">Mañana ➡</button>
-</div>
-
-<div class="card" id="stats">
-<div class="stat">
-<b>Hora más barata</b>
-<div id="minHora">-</div>
-</div>
-
-<div class="stat">
-<b>Hora más cara</b>
-<div id="maxHora">-</div>
-</div>
-
-<div class="stat">
-<b>Precio medio</b>
-<div id="avgPrecio">-</div>
-</div>
-</div>
-
-<div class="card">
-<canvas id="grafico"></canvas>
-</div>
-
-<div class="card">
-<table id="tabla">
-<tr>
-<th>Hora</th>
-<th>€/MWh</th>
-</tr>
-</table>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-
-let fechaActual = new Date()
-let chart
-
-function formatearFecha(f){
-return f.toISOString().split("T")[0]
-}
-
-function mostrarFecha(){
-document.getElementById("fecha").innerText=formatearFecha(fechaActual)
-}
-
-function cambiarDia(d){
-fechaActual.setDate(fechaActual.getDate()+d)
-cargar()
-}
-
-async function cargar(){
-
-mostrarFecha()
-
-const fecha=formatearFecha(fechaActual)
-
-const url=`https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real?start_date=${fecha}T00:00&end_date=${fecha}T23:59&time_trunc=hour`
-
-const r=await fetch(url)
-const data=await r.json()
-
-const valores=data.included[0].attributes.values
-
-const tabla=document.getElementById("tabla")
-
-tabla.innerHTML=`
-<tr>
-<th>Hora</th>
-<th>€/MWh</th>
-</tr>
-`
-
-let horas=[]
-let precios=[]
-
-let min=Infinity
-let max=-Infinity
-let minHora=""
-let maxHora=""
-
-valores.forEach(v=>{
-
-const hora=v.datetime.substring(11,16)
-const precio=v.value
-
-horas.push(hora)
-precios.push(precio)
-
-if(precio<min){
-min=precio
-minHora=hora
-}
-
-if(precio>max){
-max=precio
-maxHora=hora
-}
-
-let fila=document.createElement("tr")
-
-let clase=""
-if(precio<80) clase="barato"
-if(precio>120) clase="caro"
-
-fila.className=clase
-
-fila.innerHTML=`
-<td>${hora}</td>
-<td>${precio.toFixed(2)}</td>
-`
-
-tabla.appendChild(fila)
-
-})
-
-let avg=precios.reduce((a,b)=>a+b,0)/precios.length
-
-document.getElementById("minHora").innerText=minHora+" ("+min.toFixed(2)+"€)"
-document.getElementById("maxHora").innerText=maxHora+" ("+max.toFixed(2)+"€)"
-document.getElementById("avgPrecio").innerText=avg.toFixed(2)+"€"
-
-dibujarGrafico(horas,precios)
-
-}
-
-function dibujarGrafico(horas,precios){
-
-const ctx=document.getElementById("grafico")
-
-if(chart){
-chart.destroy()
-}
-
-chart=new Chart(ctx,{
-type:"line",
-data:{
-labels:horas,
-datasets:[{
-label:"Precio €/MWh",
-data:precios,
-fill:false,
-tension:0.3
-}]
-},
-options:{
-responsive:true,
-plugins:{
-legend:{display:true}
-}
-}
-})
-
-}
-
-cargar()
-
-</script>
-
+    <div class="container">
+        <h1>Modern Calendar</h1>
+        <div class="calendar">
+            <!-- Calendar logic goes here -->
+        </div>
+        <div class="navigation">
+            <button id="prev">Previous</button>
+            <button id="next">Next</button>
+        </div>
+    </div>
 </body>
 </html>
